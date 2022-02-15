@@ -48,6 +48,7 @@ namespace DATAMAN262
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.LabelCount = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
+            this.LightTriggerReadyDM1 = new DATAMAN262.CircleLight();
             this.label5 = new System.Windows.Forms.Label();
             this.TbxDM1Ip4 = new System.Windows.Forms.TextBox();
             this.TbxDM1Ip3 = new System.Windows.Forms.TextBox();
@@ -57,11 +58,10 @@ namespace DATAMAN262
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.BtnConnectDM1 = new System.Windows.Forms.Button();
+            this.LightConnectInputDataman = new DATAMAN262.CircleLight();
             this.label2 = new System.Windows.Forms.Label();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.NotifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
-            this.LightTriggerReadyDM1 = new DATAMAN262.CircleLight();
-            this.LightConnectInputDataman = new DATAMAN262.CircleLight();
             this.tableLayoutPanel4.SuspendLayout();
             this.panel1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
@@ -284,6 +284,15 @@ namespace DATAMAN262
             this.label11.TabIndex = 39;
             this.label11.Text = "TRIGGER READY";
             // 
+            // LightTriggerReadyDM1
+            // 
+            this.LightTriggerReadyDM1.BackColor = System.Drawing.Color.Transparent;
+            this.LightTriggerReadyDM1.Location = new System.Drawing.Point(6, 164);
+            this.LightTriggerReadyDM1.Margin = new System.Windows.Forms.Padding(0);
+            this.LightTriggerReadyDM1.Name = "LightTriggerReadyDM1";
+            this.LightTriggerReadyDM1.Size = new System.Drawing.Size(39, 39);
+            this.LightTriggerReadyDM1.TabIndex = 38;
+            // 
             // label5
             // 
             this.label5.AutoSize = true;
@@ -383,6 +392,15 @@ namespace DATAMAN262
             this.BtnConnectDM1.UseVisualStyleBackColor = false;
             this.BtnConnectDM1.Click += new System.EventHandler(this.BtnConnectDM1_Click);
             // 
+            // LightConnectInputDataman
+            // 
+            this.LightConnectInputDataman.BackColor = System.Drawing.Color.Transparent;
+            this.LightConnectInputDataman.Location = new System.Drawing.Point(6, 22);
+            this.LightConnectInputDataman.Margin = new System.Windows.Forms.Padding(0);
+            this.LightConnectInputDataman.Name = "LightConnectInputDataman";
+            this.LightConnectInputDataman.Size = new System.Drawing.Size(39, 39);
+            this.LightConnectInputDataman.TabIndex = 28;
+            // 
             // label2
             // 
             this.label2.AutoSize = true;
@@ -414,24 +432,6 @@ namespace DATAMAN262
             this.NotifyIcon.Text = "Log Dataman Data";
             this.NotifyIcon.Visible = true;
             this.NotifyIcon.DoubleClick += new System.EventHandler(this.NotifyIcon_DoubleClick);
-            // 
-            // LightTriggerReadyDM1
-            // 
-            this.LightTriggerReadyDM1.BackColor = System.Drawing.Color.Transparent;
-            this.LightTriggerReadyDM1.Location = new System.Drawing.Point(6, 164);
-            this.LightTriggerReadyDM1.Margin = new System.Windows.Forms.Padding(0);
-            this.LightTriggerReadyDM1.Name = "LightTriggerReadyDM1";
-            this.LightTriggerReadyDM1.Size = new System.Drawing.Size(39, 39);
-            this.LightTriggerReadyDM1.TabIndex = 38;
-            // 
-            // LightConnectInputDataman
-            // 
-            this.LightConnectInputDataman.BackColor = System.Drawing.Color.Transparent;
-            this.LightConnectInputDataman.Location = new System.Drawing.Point(6, 22);
-            this.LightConnectInputDataman.Margin = new System.Windows.Forms.Padding(0);
-            this.LightConnectInputDataman.Name = "LightConnectInputDataman";
-            this.LightConnectInputDataman.Size = new System.Drawing.Size(39, 39);
-            this.LightConnectInputDataman.TabIndex = 28;
             // 
             // FrmMain
             // 
