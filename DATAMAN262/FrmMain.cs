@@ -147,6 +147,7 @@ namespace DATAMAN262
                     //Output_TriggerId = this.OutputResultBuffer.TriggerId,
                     //Output_Result = this.OutputResultBuffer.Result
                 };
+                if (inputrecord.Result == "NOT READ") return;
                 Task _ = new Task(() =>
                 {
                     //var config = new CsvHelper.Configuration.CsvConfiguration()
