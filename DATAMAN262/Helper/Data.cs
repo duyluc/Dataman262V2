@@ -415,7 +415,6 @@ namespace DATAMAN262.Helper
 
                                     this.AddRecord(newrecord);
                                     this.AddRecordView(newrecordview);
-                                    
                                 }
                             }
                             else

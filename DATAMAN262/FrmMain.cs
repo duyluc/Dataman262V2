@@ -35,6 +35,12 @@ namespace DATAMAN262
         {
             InitializeComponent();
             Instance = this;
+            ToolTip tooltip = new ToolTip();
+            tooltip.AutoPopDelay = 2000;
+            tooltip.SetToolTip(this.BtnSelectSaveFolder, "Save To");
+            tooltip.SetToolTip(this.BtnClear, "Clear");
+            tooltip.SetToolTip(this.BtnConnectDM1, "Connect/DisConnect");
+            tooltip.SetToolTip(this.BtnOpenFolder, "Open Save Folder");
         }
 
         private void FrmMain_Load(object sender, EventArgs e)
