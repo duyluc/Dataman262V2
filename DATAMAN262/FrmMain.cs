@@ -229,21 +229,17 @@ namespace DATAMAN262
         {
             if (!this.InputDataman.IsConnectDataman)
             {
-                this.InputDataman = new Helper.Data.Dataman("0x01", this.DVInputDM);
                 this.IpInputGroupDM1 = new List<TextBox>();
                 this.IpInputGroupDM1.Add(this.TbxDM1Ip1);
                 this.IpInputGroupDM1.Add(this.TbxDM1Ip2);
                 this.IpInputGroupDM1.Add(this.TbxDM1Ip3);
                 this.IpInputGroupDM1.Add(this.TbxDM1Ip4);
-                this.InputDataman.Connected += InputDataman_Connected;
-                this.InputDataman.Disconnected += InputDataman_Disconnected;
-                this.InputDataman.AddedRecored += InputDataman_AddedRecored;
                 string ip = Helper.ProgramHelper.ArrangeIp(IpInputGroupDM1);
                 this.InputDataman.Connect(ip);
-                this.InputDataman.RecordViewList.Clear();
-                this.DVInputDM.DataSource = null;
-                this.DVInputDM.Refresh();
-                this.InputDataman.Params.TriggerCount = 0;
+                //this.InputDataman.RecordViewList.Clear();
+                //this.DVInputDM.DataSource = null;
+                //this.DVInputDM.Refresh();
+                //this.InputDataman.Params.TriggerCount = 0;
                 this.tsCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
             }
             else
