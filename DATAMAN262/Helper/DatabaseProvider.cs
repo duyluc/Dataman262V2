@@ -37,8 +37,6 @@ namespace DATAMAN262.Helper
         public class RecordView
         {
             public string TimeLine { get; set; }
-            public string DatamanId { get; set; }
-            public string TriggerId { get; set; }
             public string Result { get; set; }
         }
 

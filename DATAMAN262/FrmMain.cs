@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.IO;
 using CsvHelper;
 using LiteDB;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 
 
 namespace DATAMAN262
@@ -21,8 +23,8 @@ namespace DATAMAN262
         private Timer DatetimeRefreshTimer;
 
         static public FrmMain Instance;
-
         public Helper.Data.Dataman InputDataman;
+
 
         //->utilities variable
         public List<TextBox> IpInputGroupDM1;
@@ -43,42 +45,35 @@ namespace DATAMAN262
             {
                 this.NotifyIcon.Visible = true;
                 this.InputResultBuffer = new List<Helper.DatabaseProvider.RecordView>();
-                string temppath = this.GetSaveFolderPath();
-                if (!string.IsNullOrEmpty(temppath)) Helper.LogCSV.SaveFolderPath = temppath;
+                GetSetting();
+                if(_setting.Path != null) Helper.LogCSV.SaveFolderPath = _setting.Path;
                 this.TbxSaveFolderPath.Text = Helper.LogCSV.SaveFolderPath;
+                tbxCode1.Text = _setting.Code1;
+                tbxCode2.Text = _setting.Code2;
+                tbxCode3.Text = _setting.Code3;
+                ckb1.Checked = _setting.Active1;
+                ckb2.Checked = _setting.Active2;
+                ckb3.Checked = _setting.Active3;
                 //Initial IpInputGroup
-                this.IpInputGroupDM1 = new List<TextBox>();
-                this.IpInputGroupDM1.Add(this.TbxDM1Ip1);
-                this.IpInputGroupDM1.Add(this.TbxDM1Ip2);
-                this.IpInputGroupDM1.Add(this.TbxDM1Ip3);
-                this.IpInputGroupDM1.Add(this.TbxDM1Ip4);
+                
 
                 //Check dieu kien dau
                 if (!Directory.Exists(Helper.DatabaseProvider.DatabaseFilePath)) Directory.CreateDirectory(Helper.DatabaseProvider._databaseFolderPath);
                 if (!Directory.Exists(Helper.LogCSV.SaveFolderPath)) Directory.CreateDirectory(Helper.LogCSV.SaveFolderPath);
-                
+
                 //Initial Dataman object
-                this.InputDataman = new Helper.Data.Dataman("0x01",this.DVInputDM,this.IpInputGroupDM1);
-                
+                this.InputDataman = new Helper.Data.Dataman("0x01", this.DVInputDM);
                 this.InputDataman.Connected += InputDataman_Connected;
                 this.InputDataman.Disconnected += InputDataman_Disconnected;
-                this.InputDataman.DatamanReady += InputDataman_DatamanReady;
-                this.InputDataman.DatamanUnready += InputDataman_DatamanUnready;
                 this.InputDataman.AddedRecored += InputDataman_AddedRecored;
                 //-->Update Count Label
-                this.LabelCount.Invoke(new Action(() =>
-                {
-                    this.LabelCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
-                }));
-                //Initial DatatimeRefreshTimer
-                this.DatetimeRefreshTimer = new Timer();
-                this.DatetimeRefreshTimer.Interval = 500;
-
-                //Reset Connect status Light 
+                this.tsCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
+                string[] _ = this.InputDataman.Params.Ip.Split('.');
+                TbxDM1Ip1.Text = _[0];
+                TbxDM1Ip2.Text = _[1];
+                TbxDM1Ip3.Text = _[2];
+                TbxDM1Ip4.Text = _[3];
                 this.LightConnectInputDataman.CircleSubject.ChangeColor(CircleLightWpf.ColorOption.Red);
-                
-                this.LightTriggerReadyDM1.CircleSubject.ChangeColor(CircleLightWpf.ColorOption.Red);
-                
             }
             catch(Exception t)
             {
@@ -90,10 +85,7 @@ namespace DATAMAN262
 
         private void InputDataman_AddedRecored()
         {
-            this.LabelCount.Invoke(new Action(() =>
-            {
-                this.LabelCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
-            }));
+            this.tsCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
             OutputDataman_AddedRecored();
         }
 
@@ -138,29 +130,43 @@ namespace DATAMAN262
                 CsvRecord csvrecord = new CsvRecord
                 {
                     Input_TimeLine = inputrecord.TimeLine,
-                    Input_DatamanId = inputrecord.DatamanId,
-                    Input_TriggerId = inputrecord.TriggerId,
                     Input_Result = inputrecord.Result,
-
-                    //Output_TimeLine = this.OutputResultBuffer.TimeLine,
-                    //Output_DatamanId = this.OutputResultBuffer.DatamanId,
-                    //Output_TriggerId = this.OutputResultBuffer.TriggerId,
-                    //Output_Result = this.OutputResultBuffer.Result
                 };
                 if (inputrecord.Result == "NOT READ") return;
                 Task _ = new Task(() =>
                 {
-                    //var config = new CsvHelper.Configuration.CsvConfiguration()
-                    //string timeline = DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss_fff");
-                    string filename = Path.Combine(Helper.LogCSV.SaveFolderPath, $"{inputrecord.Result}_{DateTime.Now.ToString("ssfff")}.csv");
-                    //File.Create(filename);
-                    using (var file = new StreamWriter(filename))
-                    using (var csv = new CsvWriter(file, System.Globalization.CultureInfo.InvariantCulture))
+                    try
                     {
-                    //    //csv.WriteHeader<CsvRecord>();
-                    //    //csv.NextRecord();
-                    //    //csv.WriteRecord(csvrecord);
+                        string name = inputrecord.Result;
+                        if (_setting.Active1) name += "_" + _setting.Code1;
+                        if (_setting.Active2) name += "_" + _setting.Code2;
+                        if (_setting.Active3) name += "_" + _setting.Code3;
+                        string filename = Path.Combine(Helper.LogCSV.SaveFolderPath, $"{name}.xlsx");
+                        List<string> textFormat = new List<string>();
+
+                        // Read the file and display it line by line.  
+                        foreach (string line in System.IO.File.ReadLines(@"CsvFormat.txt"))
+                        {
+                            textFormat.Add(line);
+                        }
+                        if(File.Exists(filename)) File.Delete(filename);
+                        IWorkbook book = new XSSFWorkbook();
+                        ISheet sheet = book.CreateSheet();
+                        int _i = 0;
+                        foreach(string line in textFormat)
+                        {
+                            sheet.CreateRow(_i).CreateCell(0).SetCellValue(line);
+                            _i++;
+                        }
+                        using(FileStream file = File.Create(filename))
+                        {
+                            book.Write(file);
+                        }
+
                     }
+                    catch(Exception ex)
+                    { }
+                    
                 });
                 _.Start();
                 await _;
@@ -170,16 +176,6 @@ namespace DATAMAN262
                 Helper.ProgramHelper.LogErr("", t);
                 MessageBox.Show("Save Record Error!");
             }
-        }
-
-        private void InputDataman_DatamanUnready()
-        {
-            this.LightTriggerReadyDM1.Invoke(new Action(() => { this.LightTriggerReadyDM1.CircleSubject.ChangeColor(CircleLightWpf.ColorOption.Red); }));
-        }
-
-        private void InputDataman_DatamanReady()
-        {
-            this.LightTriggerReadyDM1.Invoke(new Action(() => { this.LightTriggerReadyDM1.CircleSubject.ChangeColor(CircleLightWpf.ColorOption.Green); }));
         }
 
         private void InputDataman_Disconnected()
@@ -233,10 +229,22 @@ namespace DATAMAN262
         {
             if (!this.InputDataman.IsConnectDataman)
             {
+                this.InputDataman = new Helper.Data.Dataman("0x01", this.DVInputDM);
+                this.IpInputGroupDM1 = new List<TextBox>();
+                this.IpInputGroupDM1.Add(this.TbxDM1Ip1);
+                this.IpInputGroupDM1.Add(this.TbxDM1Ip2);
+                this.IpInputGroupDM1.Add(this.TbxDM1Ip3);
+                this.IpInputGroupDM1.Add(this.TbxDM1Ip4);
+                this.InputDataman.Connected += InputDataman_Connected;
+                this.InputDataman.Disconnected += InputDataman_Disconnected;
+                this.InputDataman.AddedRecored += InputDataman_AddedRecored;
                 string ip = Helper.ProgramHelper.ArrangeIp(IpInputGroupDM1);
                 this.InputDataman.Connect(ip);
-                while (this.InputDataman.IsRunning) ;
-                Task _ = this.InputDataman.Run();
+                this.InputDataman.RecordViewList.Clear();
+                this.DVInputDM.DataSource = null;
+                this.DVInputDM.Refresh();
+                this.InputDataman.Params.TriggerCount = 0;
+                this.tsCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
             }
             else
             {
@@ -256,52 +264,7 @@ namespace DATAMAN262
             }
         }
 
-        class SaveFolderPath_Class
-        {
-            public int Id { get; set; }
-            public string Path { get; set; }
-        }
-
-        private void SaveSaveFolderPath()
-        {
-            try
-            {
-                using(LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
-                {
-                    SaveFolderPath_Class savefolderpath = new SaveFolderPath_Class
-                    {
-                        Id = 1,
-                        Path = Helper.LogCSV.SaveFolderPath
-                    };
-                    var col = db.GetCollection<SaveFolderPath_Class>("SaveFolderPath");
-                    if (col.FindOne(x => x.Id == 1) == null) col.Insert(savefolderpath);
-                    else col.Update(savefolderpath);
-                }
-            }
-            catch (Exception t)
-            {
-
-            }
-        }
-
-        private string GetSaveFolderPath()
-        {
-            try
-            {
-                using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
-                {
-                    
-                    var col = db.GetCollection<SaveFolderPath_Class>("SaveFolderPath");
-                    SaveFolderPath_Class path = col.FindOne(x => x.Id == 1);
-                    if (path == null) return "";
-                    else return path.Path;
-                }
-            }
-            catch (Exception t)
-            {
-                return "";
-            }
-        }
+        
 
         private void BtnOpenFolder_Click(object sender, EventArgs e)
         {
@@ -322,11 +285,7 @@ namespace DATAMAN262
             this.DVInputDM.Refresh();
 
             this.InputDataman.Params.TriggerCount = 0;
-
-            this.LabelCount.Invoke(new Action(() =>
-            {
-                this.LabelCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
-            }));
+            this.tsCount.Text = $"COUNT: {this.InputDataman.Params.TriggerCount}";
         }
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -337,8 +296,13 @@ namespace DATAMAN262
             }
             else
             {
-                this.InputDataman.Disconect();
-                while (this.InputDataman.IsConnectDataman) ;
+                try
+                {
+                    this.InputDataman.Disconect();
+                    while (this.InputDataman.IsConnectDataman) ;
+                }
+                catch
+                { }
             }
         }
 
@@ -356,6 +320,176 @@ namespace DATAMAN262
             {
                 this.NotifyIcon.Visible = true;
                 this.ShowInTaskbar = false;
+            }
+        }
+        class cSetting
+        {
+            public int Id { get; set; }
+            public string Path { get; set; }
+            public string Code1 { get; set; }
+            public string Code2 { get; set; }
+            public string Code3 { get; set; }
+            public bool Active1 { get; set; }
+            public bool Active2 { get; set; }
+            public bool Active3 { get; set; }
+        }
+        private cSetting _setting = new cSetting();
+
+        private void SaveSaveFolderPath()
+        {
+            try
+            {
+                using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                {
+                    var col = db.GetCollection<cSetting>("SaveFolderPath");
+                    _setting.Path = Helper.LogCSV.SaveFolderPath;
+                    col.Update(_setting);
+                }
+            }
+            catch (Exception t)
+            {
+
+            }
+        }
+
+        private void GetSetting()
+        {
+            try
+            {
+                using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                {
+
+                    _setting = new cSetting
+                    {
+                        Id = 1,
+                        Path = @"",
+                        Code1 = "",
+                        Code2 = "",
+                        Code3 = "",
+                        Active1 = true,
+                        Active2 = true,
+                        Active3 = true
+                    };
+                    var col = db.GetCollection<cSetting>("SaveFolderPath");
+                    cSetting path = col.FindOne(x => x.Id == 1);
+                    if (path == null) col.Insert(_setting);
+                    else _setting = path;
+                }
+            }
+            catch (Exception t)
+            {
+
+            }
+        }
+        private void tbxMaThietBi_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(Keys.Enter == e.KeyCode)
+            {
+                try
+                {
+                    using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                    {
+                        var col = db.GetCollection<cSetting>("SaveFolderPath");
+                        _setting.Code1 = tbxCode1.Text;
+                        col.Update(_setting);
+                    }
+                }
+                catch (Exception t)
+                {
+
+                }
+            }
+        }
+
+        private void tbxMaCongDoan_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keys.Enter == e.KeyCode)
+            {
+                try
+                {
+                    using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                    {
+                        var col = db.GetCollection<cSetting>("SaveFolderPath");
+                        _setting.Code2 = tbxCode2.Text;
+                        col.Update(_setting);
+                    }
+                }
+                catch (Exception t)
+                {
+
+                }
+            }
+        }
+
+        private void tbxCode3_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keys.Enter == e.KeyCode)
+            {
+                try
+                {
+                    using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                    {
+                        var col = db.GetCollection<cSetting>("SaveFolderPath");
+                        _setting.Code3 = tbxCode3.Text;
+                        col.Update(_setting);
+                    }
+                }
+                catch (Exception t)
+                {
+
+                }
+            }
+        }
+
+
+        private void ckb1_CheckedChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                {
+                    var col = db.GetCollection<cSetting>("SaveFolderPath");
+                    _setting.Active1 = ckb1.Checked;
+                    col.Update(_setting);
+                }
+            }
+            catch (Exception t)
+            {
+
+            }
+        }
+
+        private void ckb2_CheckedChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                {
+                    var col = db.GetCollection<cSetting>("SaveFolderPath");
+                    _setting.Active2 = ckb2.Checked;
+                    col.Update(_setting);
+                }
+            }
+            catch (Exception t)
+            {
+
+            }
+        }
+
+        private void ckb3_CheckedChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                using (LiteDatabase db = new LiteDatabase(Helper.DatabaseProvider.DatabaseFilePath))
+                {
+                    var col = db.GetCollection<cSetting>("SaveFolderPath");
+                    _setting.Active3 = ckb3.Checked;
+                    col.Update(_setting);
+                }
+            }
+            catch (Exception t)
+            {
+
             }
         }
     }

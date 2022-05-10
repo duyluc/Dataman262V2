@@ -53,6 +53,9 @@ namespace DATAMAN262.Helper
             public event DatamanUnreadyDelegate DatamanUnready;
 
             //-->Variable
+            private bool _isReady = false;
+            private bool _isRunning = false;
+            private bool _isConnectDataman = false;
             public bool IsReady
             {
                 get
@@ -68,7 +71,6 @@ namespace DATAMAN262.Helper
                     else this.DatamanUnready();
                 }
             }
-            private bool _isReady = false;
             /// <summary>
             /// Run() status
             /// </summary>
@@ -84,9 +86,6 @@ namespace DATAMAN262.Helper
                     _isRunning = value;
                 }
             }
-            private bool _isRunning = false;
-
-            private bool _isConnectDataman = false;
             /// <summary>
             /// trang thai ket noi cua Dataman
             /// </summary>
@@ -145,7 +144,22 @@ namespace DATAMAN262.Helper
                 }
             }
             private DatabaseProvider.Record _currentRecord;
+            /// <summary>
+            /// Ban ghi ket qua hien tai
+            /// </summary>
+            public bool FirstTime
+            {
+                get
+                {
+                    return _firstTime;
+                }
 
+                set
+                {
+                    _firstTime = value;
+                }
+            }
+            private bool _firstTime;
             /// <summary>
             /// danh sach ket qua doc duoc
             /// </summary>
@@ -186,7 +200,7 @@ namespace DATAMAN262.Helper
             /// <param name="datamanid"></param>
             /// <param name="datagridview"></param>
             /// <param name="ipinputgoup"></param>
-            public Dataman(string datamanid, System.Windows.Forms.DataGridView datagridview, List<System.Windows.Forms.TextBox> ipinputgoup)
+            public Dataman(string datamanid, System.Windows.Forms.DataGridView datagridview)
             {
                 this._databasefilepath = Path.Combine(Helper.DatabaseProvider._databaseFolderPath, datamanid + ".db");
                 this.Eeip = new EEIPClient();
@@ -206,23 +220,9 @@ namespace DATAMAN262.Helper
                     ResultId = "",
                     Result = ""
                 };
-                this.Params = new DatabaseProvider.DatamanParam()
-                {
-                    DatamanId = datamanid,
-                    Ip = "192.168.1.111",
-                    LastResultId = "",
-                    TriggerCount = 0,
-                    LastTriggerId = "INITIAL",
-                    ResultCount = 0,
-                    LastResult = ""
-                };
                 if (this.ReadParams())
                 {
-                    string[] _ = this.Params.Ip.Split('.');
-                    for (int i = 0; i < 4; i++)
-                    {
-                        ipinputgoup[i].Text = _[i];
-                    }
+                    
                 }
             }
 
@@ -264,7 +264,16 @@ namespace DATAMAN262.Helper
                         }
                         else
                         {
-                            return false;
+                            this.Params = new DatabaseProvider.DatamanParam()
+                            {
+                                DatamanId = "1",
+                                Ip = "192.168.1.111",
+                                LastResultId = "",
+                                TriggerCount = 0,
+                                LastTriggerId = "INITIAL",
+                                ResultCount = 0,
+                                LastResult = ""
+                            };
                         }
                     }
                     return true;
@@ -305,20 +314,13 @@ namespace DATAMAN262.Helper
             public void AddRecord(DatabaseProvider.Record record)
             {
                 this.RecordList.Add(record);
-                //this.AddedRecored();
-                //this.TableView.Invoke(new Action(() =>
-                //{
-                //    this.TableView.DataSource = null;
-                //    this.TableView.DataSource = this.RecordList;
-                //    this.TableView.FirstDisplayedScrollingRowIndex = this.TableView.RowCount - 1;
-                //    this.TableView.Columns["Id"].Visible = false;
-                //    this.TableView.Refresh();
-                //}));
+                if (this.RecordList.Count > 100) this.RecordList.RemoveAt(0);
             }
 
             public void AddRecordView(DatabaseProvider.RecordView record)
             {
                 this.RecordViewList.Add(record);
+                if (this.RecordViewList.Count > 100) this.RecordViewList.RemoveAt(0);
                 this.TableView.Invoke(new Action(() =>
                 {
                     this.TableView.DataSource = null;
@@ -354,7 +356,7 @@ namespace DATAMAN262.Helper
                                 break;
                             }
                             Ping ping = new Ping();
-                            PingReply re = ping.Send(this.Params.Ip);
+                            PingReply re = ping.Send(this.Params.Ip,1000);
                             if (!re.Status.ToString().Equals("Success"))
                             {
                                 this.IsConnectDataman = false;
@@ -363,7 +365,14 @@ namespace DATAMAN262.Helper
                             this.Eeip.IPAddress = this.Params.Ip;
                             this.Eeip.RegisterSession();
                             byte[] data = this.Eeip.AssemblyObject.getInstance(11);
-                            if (data.Length != 500) continue;
+                            if (data.Length != 500)
+                            {
+                                using(StreamWriter writer = new StreamWriter(".\\LogError.txt"))
+                                {
+                                    writer.WriteLine($"ReceiveData Error: Datalength-{data.Length}");
+                                }
+                                continue;
+                            };
                             // trigger ready
                             char i = Convert.ToString(data[0], toBase: 2)[0];
                             if (i == '1')
@@ -382,6 +391,11 @@ namespace DATAMAN262.Helper
                             if(_triggerid.ToString() != this.Params.LastTriggerId && this.Params.LastTriggerId != "INITIAL")
                             {
                                 this.Params.LastTriggerId = _triggerid.ToString();
+                                if(!FirstTime)
+                                {
+                                    this.Params.LastResultId = _resultid.ToString();
+                                    FirstTime = true;
+                                }
                                 //Co ket qua moi
                                 if (_resultid.ToString() != this.Params.LastResultId)
                                 {
@@ -403,8 +417,8 @@ namespace DATAMAN262.Helper
                                     DatabaseProvider.RecordView newrecordview = new DatabaseProvider.RecordView()
                                     {
                                         TimeLine = DateTime.Now.ToString("dd/MM/yy HH:mm:ss:fff"),
-                                        DatamanId = this.Params.DatamanId,
-                                        TriggerId = _triggerid.ToString(),
+                                        //DatamanId = this.Params.DatamanId,
+                                        //TriggerId = _triggerid.ToString(),
                                         Result = _resultdata
                                     };
                                     //Update Params
@@ -412,7 +426,6 @@ namespace DATAMAN262.Helper
                                     this.Params.ResultCount += 1;
                                     this.Params.LastResult = _resultdata;
                                     this.SaveParams();
-
                                     this.AddRecord(newrecord);
                                     this.AddRecordView(newrecordview);
                                     
@@ -429,8 +442,26 @@ namespace DATAMAN262.Helper
                     await _;
                     this.IsRunning = false;
                 }
-                catch(Exception t)
+                catch(System.IO.IOException)
                 {
+                    this.IsRunning = false;
+                    this.IsConnectDataman = false;
+                    try
+                    {
+                        this.Eeip.UnRegisterSession();
+                    }
+                    catch
+                    { }
+                }
+                catch(Exception ex)
+                {
+                    try
+                    {
+                        this.Eeip.UnRegisterSession();
+                    }
+                    catch
+                    { }
+                    this.IsConnectDataman = false;
                     this.IsRunning = false;
                 }
             }
@@ -465,11 +496,14 @@ namespace DATAMAN262.Helper
                     }
                     this.SetIp(ip);
                     Ping ping = new Ping();
-                    PingReply rep = ping.Send(ip);
+                    PingReply rep = ping.Send(ip,1000);
                     if (rep.Status.ToString().Equals("Success"))
                     {
                         this.Eeip.IPAddress = ip;
                     }
+                    while (this.IsRunning) ;
+                    Task _ = this.Run();
+                    this.Params.LastTriggerId = "-1";
                     return true;
                 }
                 catch(Exception t)
